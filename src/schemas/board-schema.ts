@@ -45,6 +45,8 @@ export const notesSchema: CollectionSchema = {
     { name: 'kind', storage: 'text', interpretation: 'plain', maxLength: 12 },
     // Who an action item belongs to (free text, as spoken).
     { name: 'owner', storage: 'text', interpretation: 'plain', maxLength: 40 },
+    // 1 once an action item is completed.
+    { name: 'done', storage: 'number', interpretation: 'number' },
     { name: 'sourceUrl', storage: 'text', interpretation: 'plain', maxLength: 500 },
   ],
   permissions: { viewer: NONE, member: FULL, admin: FULL },
@@ -95,6 +97,7 @@ export const usageSchema: CollectionSchema = {
     { name: 'day', storage: 'text', interpretation: 'plain', required: true, immutable: true },
     { name: 'scout', storage: 'number', interpretation: 'number' },
     { name: 'listen', storage: 'number', interpretation: 'number' },
+    { name: 'email', storage: 'number', interpretation: 'number' },
   ],
   permissions: {
     viewer: NONE,
@@ -125,6 +128,8 @@ export interface Note {
   sourceUrl: string
   kind: NoteKind
   owner: string
+  /** 1 once an action item is completed; absent or 0 otherwise. */
+  done?: number
 }
 
 export interface Cluster {

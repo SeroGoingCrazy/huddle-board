@@ -91,6 +91,7 @@ Finish with one or two plain sentences saying what you did. No Markdown in that 
 export interface StoredRecord<T> {
   recordId: string
   data: T
+  createdBy?: string
 }
 
 interface ToolEnvelope {

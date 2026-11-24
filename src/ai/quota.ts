@@ -23,6 +23,8 @@ export const DAILY_LIMITS = {
   scout: 30,
   /** Voice clips: one per utterance, so roughly an hour of talking. */
   listen: 300,
+  /** Minutes emails: about a cent each, and they reach other people. */
+  email: 5,
 } as const
 
 export type QuotaKind = keyof typeof DAILY_LIMITS
@@ -30,6 +32,7 @@ export type QuotaKind = keyof typeof DAILY_LIMITS
 const LABEL: Record<QuotaKind, string> = {
   scout: 'Scout requests',
   listen: 'voice notes',
+  email: 'minutes emails',
 }
 
 interface ToolEnvelope {
@@ -38,7 +41,8 @@ interface ToolEnvelope {
   error?: string
 }
 
-async function systemTool(env: Env, userId: string, tool: string, params: Record<string, unknown>) {
+/** Run a record tool with RBAC off. Callers must authorize first. */
+export async function systemTool(env: Env, userId: string, tool: string, params: Record<string, unknown>) {
   const stub = env.RECORD_ROOMS.get(env.RECORD_ROOMS.idFromName(`app:${env.DEEPSPACE_APP_ID}`))
   const res = await stub.fetch(
     new Request('https://internal/api/tools/execute', {
@@ -74,7 +78,7 @@ export async function consumeQuota(env: Env, userId: string, kind: QuotaKind): P
     : await systemTool(env, userId, 'records.create', {
         collection: 'usage',
         recordId,
-        data: { userId, day, scout: 0, listen: 0, [kind]: 1 },
+        data: { userId, day, scout: 0, listen: 0, email: 0, [kind]: 1 },
       })
   // A failed counter write must not take the feature down with it.
   if (!write.success) console.error(`[quota] could not record ${kind} use: ${write.error ?? 'unknown error'}`)

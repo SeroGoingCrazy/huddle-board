@@ -10,7 +10,7 @@ import type { PresencePeerClient } from 'deepspace'
 import { ArrowLeft } from 'lucide-react'
 import { BoardCanvas } from '@/components/board/BoardCanvas'
 import { ScoutPanel } from '@/components/board/ScoutPanel'
-import { SummaryPanel } from '@/components/board/SummaryPanel'
+import { BoardTabs } from '@/components/board/BoardTabs'
 import { agentRecordId, type AgentState, type Board } from '@/schemas/board-schema'
 
 export default function BoardPage() {
@@ -46,7 +46,7 @@ export default function BoardPage() {
         </div>
         <aside className="flex w-[340px] shrink-0 flex-col border-l border-border bg-card max-md:hidden">
           <ScoutPanel boardId={id} agent={agent} />
-          <SummaryPanel boardId={id} />
+          <BoardTabs boardId={id} />
         </aside>
       </div>
     </div>

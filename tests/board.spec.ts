@@ -117,3 +117,41 @@ test('sample meeting board opens populated, and deleting a board removes it', as
   await a.page.goto(boardPath)
   await expect(a.page.getByText('This board does not exist')).toBeVisible({ timeout: 15_000 })
 })
+
+test('action items form a shared checklist, and minutes are refused without a deliverable address', async ({
+  users,
+}) => {
+  const [a, b] = await users(2)
+  await a.page.goto('/home')
+  await a.page.getByTestId('sample-board').click()
+  await a.page.waitForURL(/\/b\/[^/]+$/, { timeout: 20_000 })
+  await b.page.goto(new URL(a.page.url()).pathname)
+  await expect(b.page.getByTestId('note')).toHaveCount(10, { timeout: 20_000 })
+
+  // The sample has two action items; the tab counts the open ones.
+  await a.page.getByTestId('tab-actions').click()
+  await expect(a.page.getByTestId('action-item')).toHaveCount(2)
+  await expect(a.page.getByTestId('tab-actions')).toHaveText('Actions (2)')
+
+  // A ticks one off: B's board strikes that note through, and B's tab recounts.
+  // click(), not check(): a completed item moves to the end of the list, so
+  // the "first" item is a different one by the time check() re-reads it.
+  await a.page.getByTestId('action-item').first().getByRole('checkbox').click()
+  await expect(a.page.getByRole('checkbox', { checked: true })).toHaveCount(1)
+  await expect(b.page.locator('[data-testid="note"][data-done="true"]')).toHaveCount(1, { timeout: 10_000 })
+  await expect(b.page.getByTestId('tab-actions')).toHaveText('Actions (1)', { timeout: 10_000 })
+
+  // A reassigns the remaining item by hand; B's note shows the new owner.
+  const open = a.page.getByTestId('action-item').first()
+  await open.getByLabel('Owner').fill('Priya')
+  await open.getByLabel('Owner').press('Enter')
+  await expect(b.page.locator('[data-testid="note"][data-done="false"][data-kind="action"]')).toContainText(
+    'Priya',
+    { timeout: 10_000 },
+  )
+
+  // Test accounts have undeliverable addresses, so nothing is sent (or billed).
+  await a.page.getByTestId('tab-summary').click()
+  await a.page.getByTestId('email-minutes').click()
+  await expect(a.page.getByText('No deliverable email address')).toBeVisible({ timeout: 15_000 })
+})

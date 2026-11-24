@@ -22,6 +22,7 @@ import type { DOBindings, DOManifest, Job, JobContext } from 'deepspace/worker'
 import { AI_CHATS_SCHEMA } from 'deepspace/schema'
 import { registerAgent } from './src/ai/agent.js'
 import { registerBoardAgentRoutes } from './src/ai/board-agent.js'
+import { registerMinutesRoutes } from './src/ai/minutes.js'
 import { registerNoteTakerRoutes } from './src/ai/note-taker.js'
 import { buildTools } from './src/ai/tools.js'
 import { tasks as cronTasks, runTask as runCronTask } from './src/cron.js'
@@ -149,6 +150,8 @@ registerActionRoutes(app, resolveAuth)
 registerBoardAgentRoutes(app, resolveAuth)
 // Voice note-taker: POST /api/boards/:boardId/listen.
 registerNoteTakerRoutes(app, resolveAuth)
+// Minutes by email: POST /api/boards/:boardId/minutes/send.
+registerMinutesRoutes(app, resolveAuth)
 // Every scaffold exposes selected tools through HTTP, MCP and browser tools.
 // Only copilot owns the collections needed for the in-app chat UI.
 registerAgent(app, {

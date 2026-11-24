@@ -506,6 +506,7 @@ function NoteCard({
       data-testid="note"
       data-author={note.data.author}
       data-kind={kind}
+      data-done={note.data.done ? 'true' : 'false'}
       className={cn(
         'pointer-events-auto absolute left-0 top-0 flex flex-col rounded-md p-3 text-[13px] leading-snug text-neutral-900',
         dragging
@@ -556,7 +557,7 @@ function NoteCard({
           }}
         />
       ) : (
-        <p className="flex-1 break-words whitespace-pre-wrap">
+        <p className={cn('flex-1 break-words whitespace-pre-wrap', note.data.done && 'line-through opacity-60')}>
           {note.data.text || <span className="text-neutral-500">Double-click to write…</span>}
         </p>
       )}

@@ -1,5 +1,7 @@
 # Huddle
 
+**Live:** https://huddle-board.app.space
+
 A shared sticky-note board that takes the meeting notes for you.
 
 People talk and brainstorm; the board listens and writes down ideas,
@@ -27,6 +29,12 @@ Objects).
   - write the board's summary.
 - **Shared summary** — a text document next to the board that Scout drafts
   and people keep editing together.
+- **Action list** — every action item as a checklist: tick it off, change the
+  owner. It is the same data as the notes, so the board updates for everyone.
+- **Email minutes** — one click sends the summary plus the board's decisions,
+  action items and open questions to everyone who contributed notes.
+- **Sample meeting** — "Try a sample meeting" on the boards page opens a
+  populated board, so there is something to try Scout on straight away.
 
 ## How it is built
 
@@ -39,6 +47,9 @@ Objects).
 | Scout's tool loop | `streamDeepSpaceAgent` | `src/ai/board-agent.ts` |
 | Web research | `exa/search` integration | `src/ai/board-agent.ts` |
 | Speech to text | `speech/speech-to-text` integration | `src/ai/note-taker.ts` |
+| Minutes by email | `email/send` integration | `src/ai/minutes.ts` |
+| Delete a board with its notes | Server action (RBAC off, ownership checked) | `src/actions/index.ts` |
+| Daily spending caps | `usage` collection, server-written | `src/ai/quota.ts` |
 
 ### The main design decision
 
@@ -100,6 +111,15 @@ wants their words captured presses the button themselves.
   message live in its `agents` record, so the whole room sees them, not only
   the person who asked.
 - **One run per board at a time**, enforced by a soft lock on that record.
+- **Spending is capped per person per day** (30 Scout requests, 300 voice
+  clips, 5 minutes emails). The app owner pays for these, so the counter is
+  written only by the worker; members have no permission on it at all.
+- **Minutes recipients are chosen by the server**: the sender plus whoever
+  wrote notes on that board, others in bcc. The request carries no addresses,
+  so the feature cannot be used to email arbitrary people.
+- **The minutes' lists come from the notes, not from the model.** Only the
+  prose summary is model-written; decisions, actions and questions are read
+  straight from the records, so the email cannot invent an action item.
 
 ### Left out on purpose
 
@@ -107,8 +127,7 @@ wants their words captured presses the button themselves.
   enough to demonstrate collaboration; a real product needs invitations.
 - **Hosting the call (LiveKit rooms).** People already have a meeting app.
   Huddle listens; it does not replace the call.
-- **Emailing minutes, calendar, payments.** Nice later; none of them makes
-  the meeting itself better.
+- **Calendar, payments.** Neither makes the meeting itself better.
 - **Computer use / browser automation.** The platform has no desktop or
   headless browser to drive, and an agent that edits shared state through
   tools is faster, more reliable, and visible to everyone.
@@ -117,23 +136,33 @@ wants their words captured presses the button themselves.
 
 ### Known limits
 
-- Deleting a board leaves its notes and groups behind as orphan rows.
 - Note text is last-write-wins: two people editing the same note at once will
   overwrite each other. (The summary uses Yjs and does not have this problem.)
 - The per-board lock is read-then-write, not atomic. Two requests in the same
   few milliseconds could both start.
-- Model and search costs are billed to the app owner, with no per-user quota.
-  Sign-in is required, but a signed-in user could run Scout repeatedly.
+- The daily caps are read-then-write, so a burst of simultaneous requests can
+  exceed a cap by one or two. They also reset at midnight UTC, not local time.
 - If the person who asked closes the tab mid-run, the run may be cut short.
   The lock then expires on its own after three minutes.
 - The side panel (Scout, summary, note-taker) is hidden on narrow screens.
 - The note-taker's speech detection uses a fixed loudness threshold. A noisy
   room may produce clips with no real speech (the transcript is then too
   short and is ignored), and a very quiet speaker may be missed.
-- An action item's owner is set by voice or by Scout; there is no control to
-  edit it by hand yet.
+- An owner is free text ("Maya"), not a link to a user account, so the app
+  cannot notify the owner of an action item.
+- Minutes go to people's sign-in addresses. Sending was verified only up to
+  the "no deliverable address" refusal with test accounts; a real delivery
+  has to be checked by hand.
 - Notes taken by voice are placed by the worker one request at a time. Two
   people speaking at the same instant can be given the same free spot.
+
+### What I would build next
+
+- Scout speaking up on its own during a meeting: duplicate points, decisions
+  that contradict each other, action items with no owner.
+- A morning reminder (the platform's cron) for open action items.
+- Per-board invitations instead of one open workspace.
+- Dot-voting on notes, with Scout ranking groups by votes.
 
 ## Run it
 
