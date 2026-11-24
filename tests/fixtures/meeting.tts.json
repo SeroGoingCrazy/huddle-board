@@ -1,0 +1,7 @@
+{
+  "model": "tts-1",
+  "voice": "nova",
+  "response_format": "wav",
+  "speed": 0.95,
+  "input": "Okay, let's get started. First idea: I think we should add a dark mode to the mobile app. Also, we have decided to launch the beta on March third. Ben will write the release notes by Friday. One open question: do we need a legal review for the new terms of service? ... Scout, please group the notes on the board into themes."
+}
