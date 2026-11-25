@@ -14,7 +14,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { PointerEvent as ReactPointerEvent } from 'react'
-import { getUserColor, useMutations, useQuery } from 'deepspace'
+import { getUserColor, useMutations, useQuery, useUsers } from 'deepspace'
 import type { PresencePeerClient, RecordData } from 'deepspace'
 import { ExternalLink, Maximize2, Mic, Minus, Plus, Sparkles, StickyNote, Trash2 } from 'lucide-react'
 import { NOTE_COLORS, NOTE_H, NOTE_W, boundsOf, type Point } from '@/lib/layout'
@@ -273,6 +273,10 @@ export function BoardCanvas({ boardId, agent, peers, updatePresence }: Props) {
     })
   }, [notes, clusters])
 
+  // A voice note is created by whoever spoke, so the roster names the speaker.
+  const { users } = useUsers()
+  const nameById = useMemo(() => new Map(users.map((user) => [user.id, user.name])), [users])
+
   const agentActive = !!agent?.data.busy
   const peerCursors = useMemo(
     () =>
@@ -351,6 +355,7 @@ export function BoardCanvas({ boardId, agent, peers, updatePresence }: Props) {
               }}
               onColor={(color) => void noteWrites.put(note.recordId, { color })}
               onKind={(kind) => void noteWrites.put(note.recordId, { kind })}
+              speaker={nameById.get(note.createdBy) ?? ''}
               onRemove={() => removeNote(note.recordId)}
             />
           )
@@ -477,6 +482,8 @@ interface NoteCardProps {
   onColor: (color: string) => void
   onKind: (kind: NoteKind) => void
   onRemove: () => void
+  /** For a note taken by voice: the name of the person who said it. */
+  speaker: string
 }
 
 function NoteCard({
@@ -493,6 +500,7 @@ function NoteCard({
   onColor,
   onKind,
   onRemove,
+  speaker,
 }: NoteCardProps) {
   const paint = paintFor(note.data.color)
   const kind = asNoteKind(note.data.kind)
@@ -571,7 +579,7 @@ function NoteCard({
           )}
           {note.data.author === 'voice' && (
             <span className="flex items-center gap-1">
-              <Mic className="h-3 w-3" /> heard
+              <Mic className="h-3 w-3" /> {speaker ? `${speaker} said` : 'heard'}
             </span>
           )}
           {note.data.sourceUrl && (

@@ -3,7 +3,7 @@ import type { ActionHandler } from 'deepspace/worker'
 import type { Env } from '../../worker'
 
 /** Collections whose rows belong to a board and must go when it does. */
-const BOARD_CHILDREN = ['notes', 'clusters', 'agents'] as const
+const BOARD_CHILDREN = ['notes', 'clusters', 'agents', 'transcripts'] as const
 const PAGE = 500
 
 export const actions: Record<string, ActionHandler<Env>> = {

@@ -4,12 +4,13 @@
  * line and the same closing message, not just the person who asked.
  */
 
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { getAuthToken } from 'deepspace'
 import type { RecordData } from 'deepspace'
 import { ArrowUp, Loader2, Sparkles } from 'lucide-react'
 import { SCOUT_COLOR } from '@/lib/note-colors'
 import type { AgentState } from '@/schemas/board-schema'
+import { useMeeting } from './MeetingProvider'
 import { NoteTaker } from './NoteTaker'
 
 const SUGGESTIONS = [
@@ -79,6 +80,10 @@ export function ScoutPanel({ boardId, agent }: Props) {
     void askRef.current(request)
     return true
   }, [])
+
+  // Spoken "Scout, …" requests reach Scout through the meeting state.
+  const { registerScout } = useMeeting()
+  useEffect(() => registerScout(askByVoice), [registerScout, askByVoice])
 
   return (
     <section className="flex flex-col gap-3 border-b border-border p-4">
@@ -173,7 +178,7 @@ export function ScoutPanel({ boardId, agent }: Props) {
         </p>
       )}
 
-      <NoteTaker boardId={boardId} askScout={askByVoice} />
+      <NoteTaker />
     </section>
   )
 }

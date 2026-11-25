@@ -84,3 +84,14 @@ export async function consumeQuota(env: Env, userId: string, kind: QuotaKind): P
   if (!write.success) console.error(`[quota] could not record ${kind} use: ${write.error ?? 'unknown error'}`)
   return null
 }
+
+/** A member's display name, for labelling what they said or did. */
+export async function displayNameOf(env: Env, userId: string): Promise<string> {
+  const found = await systemTool(env, userId, 'records.get', { collection: 'users', recordId: userId })
+  const row = found.success ? found.data?.record?.data : undefined
+  const name = typeof row?.name === 'string' ? row.name.trim() : ''
+  if (name) return name.slice(0, 40)
+  // Fall back to the part of the address before the @, never the address.
+  const email = typeof row?.email === 'string' ? row.email : ''
+  return email.split('@')[0]?.slice(0, 40) || 'Guest'
+}

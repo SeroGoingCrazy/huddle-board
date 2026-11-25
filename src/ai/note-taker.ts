@@ -32,7 +32,7 @@ import { NOTE_KINDS, type NoteKind } from '../schemas/board-schema.js'
 import { boardStore, occupied, requireMember, type ResolveAuth } from './board-agent.js'
 import { callIntegration } from './integrations.js'
 import { streamAgent } from './model.js'
-import { consumeQuota } from './quota.js'
+import { consumeQuota, displayNameOf } from './quota.js'
 import type { AppContext } from '../../worker.js'
 
 const MODEL_ID = 'claude-haiku-5-5'
@@ -101,6 +101,18 @@ export function registerNoteTakerRoutes(app: Hono<AppContext>, resolveAuth: Reso
       console.error(`[notetaker] transcription failed: ${loggableError(err)}`)
       return c.json({ error: 'Could not transcribe that clip.' }, 502)
     }
+    if (!text) return c.json({ text, added: 0 })
+
+    // Every utterance goes into the shared transcript, attributed to the
+    // speaker, whether or not it turns out to hold a note-worthy point.
+    await executor('records.create', {
+      collection: 'transcripts',
+      data: {
+        boardId: store.boardId,
+        speaker: await displayNameOf(c.env, auth.userId),
+        text: text.slice(0, 2000),
+      },
+    })
     if (text.split(/\s+/).filter(Boolean).length < MIN_WORDS) return c.json({ text, added: 0 })
 
     const [notes, clusters] = await Promise.all([store.notes(), store.clusters()])

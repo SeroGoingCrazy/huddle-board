@@ -16,6 +16,7 @@ import {
   boardsSchema,
   clustersSchema,
   notesSchema,
+  transcriptsSchema,
   usageSchema,
 } from './schemas/board-schema'
 
@@ -27,4 +28,5 @@ export const schemas: CollectionSchema[] = [
   clustersSchema,
   agentsSchema,
   usageSchema,
+  transcriptsSchema,
 ]

@@ -87,6 +87,30 @@ export const agentsSchema: CollectionSchema = {
 }
 
 /**
+ * The running transcript: one row per utterance, written by the note-taker
+ * route as the person who spoke (so `createdBy` is the speaker).
+ */
+export const transcriptsSchema: CollectionSchema = {
+  name: 'transcripts',
+  columns: [
+    { name: 'boardId', storage: 'text', interpretation: 'plain', required: true, immutable: true },
+    { name: 'speaker', storage: 'text', interpretation: 'plain', maxLength: 40 },
+    { name: 'text', storage: 'text', interpretation: 'plain', maxLength: 2000 },
+  ],
+  permissions: {
+    viewer: NONE,
+    member: { read: true, create: true, update: false, delete: 'own' },
+    admin: FULL,
+  },
+}
+
+export interface TranscriptLine {
+  boardId: string
+  speaker: string
+  text: string
+}
+
+/**
  * Daily use of owner-billed features, one row per user per UTC day (id
  * `<userId>_<yyyy-mm-dd>`). Server-written only: see src/ai/quota.ts.
  */

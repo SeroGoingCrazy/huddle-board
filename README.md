@@ -2,10 +2,11 @@
 
 **Live:** https://huddle-board.app.space
 
-A shared sticky-note board that takes the meeting notes for you.
+A meeting room built around a shared board that takes the notes for you.
 
-People talk and brainstorm; the board listens and writes down ideas,
-decisions, action items and open questions as sticky notes. **Scout**, an AI
+People join a voice call on the board and talk. What they say appears as a
+live transcript, and the ideas, decisions, action items and open questions
+in it become sticky notes on their own. **Scout**, an AI
 teammate on the same board, groups the notes into themes, adds ideas, looks
 things up on the web, and writes the summary. Everyone watches it work, live.
 
@@ -18,9 +19,13 @@ Objects).
 - **Sticky notes** — add, edit, drag, recolor, delete. Every change syncs to
   everyone on the board.
 - **Live cursors** — see where each teammate is pointing.
-- **Voice note-taker** — press "Take notes while I talk". What you say becomes
-  notes, typed as *idea*, *decision*, *action* (with an owner) or *question*.
-  Say "Scout, group these" and Scout does it.
+- **Meeting call** — "Join meeting" puts you in a voice call with everyone on
+  the board: who is in it, who is speaking, mute, leave.
+- **Automatic notes** — while you are in the meeting, what you say becomes
+  notes, typed as *idea*, *decision*, *action* (with an owner) or *question*,
+  and labelled with who said it. Say "Scout, group these" and Scout does it.
+  A notes-only mode covers people sitting in the same room.
+- **Live transcript** — a running "who said what" that everyone sees.
 - **Scout** — ask in plain language. Scout can:
   - read the board,
   - add notes (placed automatically in free space),
@@ -46,7 +51,9 @@ Objects).
 | Shared summary | Yjs text field | `src/components/board/SummaryPanel.tsx` |
 | Scout's tool loop | `streamDeepSpaceAgent` | `src/ai/board-agent.ts` |
 | Web research | `exa/search` integration | `src/ai/board-agent.ts` |
+| Voice call | `livekit/generate-token` integration + `livekit-client` | `src/ai/call.ts`, `src/components/board/MeetingProvider.tsx` |
 | Speech to text | `speech/speech-to-text` integration | `src/ai/note-taker.ts` |
+| Transcript | RecordRoom collection, written as the speaker | `src/ai/note-taker.ts` |
 | Minutes by email | `email/send` integration | `src/ai/minutes.ts` |
 | Delete a board with its notes | Server action (RBAC off, ownership checked) | `src/actions/index.ts` |
 | Daily spending caps | `usage` collection, server-written | `src/ai/quota.ts` |
@@ -92,10 +99,28 @@ before the SDK settled the session, so true usage may have been lower, but
 the reservation is the binding limit either way. The price of the pipeline
 is latency: a note appears a few seconds after you pause, not as you speak.
 
-Each browser listens only to its own microphone. Huddle does not host the
-call; people are already in a room or on a meeting app. That keeps "who said
-it" trivial and avoids multi-party audio. The cost is that each person who
-wants their words captured presses the button themselves.
+### The call, and how the transcript knows who spoke
+
+The call is a LiveKit room per board. The worker mints each person's token
+(`src/ai/call.ts`): it derives the room name from the app and board ids after
+checking the caller can read that board, so the browser never chooses a room.
+
+Transcription does **not** run on the mixed call audio. Each browser
+transcribes only its own microphone, the same track it publishes to the call.
+That makes speaker attribution exact with no speaker-recognition model: a
+transcript line is a record created by the signed-in person whose microphone
+produced it. Muting in the call mutes the notes too, because it is one track.
+
+The cost of that choice: a person is transcribed only if they joined from
+Huddle. And without headphones, a microphone can pick up other people's
+voices from the speakers; the browser's echo cancellation handles most of it,
+but not all.
+
+An earlier version had no call at all, on the theory that people already have
+a meeting app. In use that felt like talking at a form, not being in a
+meeting, so the call went in. It costs almost nothing to run (LiveKit is
+priced per participant-minute at a fraction of a cent, and token minting is
+free), which removed the main reason for leaving it out.
 
 ### Other choices worth knowing
 
@@ -125,8 +150,11 @@ wants their words captured presses the button themselves.
 
 - **Per-board permissions.** Every signed-in user can open every board. Good
   enough to demonstrate collaboration; a real product needs invitations.
-- **Hosting the call (LiveKit rooms).** People already have a meeting app.
-  Huddle listens; it does not replace the call.
+- **Video and screen sharing.** The board is the shared screen. Audio is
+  what a note-taker needs.
+- **A server-side bot that joins the call and transcribes everyone.** It
+  would cover people who dial in from elsewhere, but it needs a long-running
+  process the platform does not offer, and it loses exact attribution.
 - **Calendar, payments.** Neither makes the meeting itself better.
 - **Computer use / browser automation.** The platform has no desktop or
   headless browser to drive, and an agent that edits shared state through
