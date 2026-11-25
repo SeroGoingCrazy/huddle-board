@@ -53,7 +53,7 @@ export function NoteTaker() {
     >
       <div className="flex items-center gap-2 text-sm font-medium text-foreground">
         <span
-          className={cn('h-2.5 w-2.5 rounded-full', live && !paused && !muted ? 'animate-pulse bg-red-500' : 'bg-muted-foreground')}
+          className={cn('h-2.5 w-2.5 rounded-full', live && !paused && !muted ? 'animate-pulse bg-emerald-500' : 'bg-muted-foreground')}
         />
         {!live ? 'Starting…' : muted ? 'Muted' : paused ? 'Notes paused' : 'Taking notes'}
         {live && (
